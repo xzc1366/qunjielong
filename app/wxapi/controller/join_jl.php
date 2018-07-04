@@ -24,7 +24,6 @@ class Signup extends \think\Controller {
 	public function add_actor(){
 		$theme_id=input('theme_id');
 		$user_id=input('user_id');
-
 		//接收项目数组
         $item=json_decode(input('item'));
         //接收地址数组

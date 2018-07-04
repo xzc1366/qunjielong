@@ -40,9 +40,11 @@ class User extends Controller {
 		if ($res) {
 			$id = db('user_info')->where('open_id', $openid)->value('id');
 		} else {
-			db('user_info')->insert(['open_id' => $openid, 'user_img' => $userImg]);
-			
+			//插入用户表数据
+			db('user_info')->insert(['open_id' => $openid, 'user_img' => $userImg,'user_name'=>$userName]);
 			$id = db('user_info')->getLastInsID();
+			//插入参与表数据
+			db('actor')->insert(['user_id' => $id]);
 		}
 
 		// 返回用户信息
@@ -54,12 +56,22 @@ class User extends Controller {
 		}else{
 			$result['theme']=db('theme_info')->select(); 
 		}
-		foreach($result['theme'] as $sky=>$value){
-				$result['theme'][$sky]['xmu']=db('item_info')->where('theme_id='.$value['id'])->select();
-				
-			}
+		
+		foreach($result['theme'] as $key=>$value){
+			    $result['theme'][$key]['theme_img']=db('theme_img')->field('img_path')->where('theme_id='.$value['id'])->select();
+                $uid=db('actor')->where('theme_id='.$value['id'])->value('user_id');
+			    if(!empty($uid)){
+					$result['theme'][$key]['user_name']=db('user_info')->where('id='.$uid)->value('user_name');						 
+			    }
+			    else{
+			    	$result['theme'][$key]['user_name']="";
+			    }
+		}
 		if($result){return json($result);}else{return $result="";}
 	}
+
+
+
 }
 
 /**
@@ -68,7 +80,7 @@ class User extends Controller {
  * @param    [type]
  * @return   [type]
  */
-function vget($url){
+ function vget($url){
 	$info = curl_init();
 	curl_setopt($info, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($info, CURLOPT_HEADER, 0);

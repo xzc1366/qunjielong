@@ -68,9 +68,34 @@ class Signup extends \think\Controller {
 		        foreach($item as $key=>$value){
 		           $item_data = ['theme_id' => $theme_id,'item_name' => $value['item_name'], 'price'=> $value['price'], 'amount' => $value['amount'], 'add_time' => time()];
 		         // 保存项目信息  
-		           db('item_info')->insert($item_data);
+		           db('item_info')->insert($item_data); 
 		        }
+		        //查找项目条数后查看价格区间
+		        $count=db('item_info')->where('theme_id='.$theme_id)->count();
+			    $it_in=db('item_info')->field('price')->where('theme_id='.$theme_id)->select();
+		        if($count>1){
+			        foreach($it_in as $key=>$value){
+			        	if($key==0){
+				        	$min_pri=$it_in[$key]['price'];
+				        	$max_pri=$it_in[$key]['price'];
+			            }
+		                if($value['price']<$min_pri){$min_pri=$value['price'];}
+		                if($value['price']>$max_pri){$max_pri=$value['price'];}
+			        }
+			        $pri=$min_pri.'~'.$max_pri;
+		        }
+		        else{
+		        	if(empty($it_in[0]['price'])){
+		        		$pri="";
+		        	}else{
+		        		$pri=$it_in[0]['price'];
+		            }
+		        }
+
 		    }
+		    //保存项目价格区间到主题表
+		    $da=['btw_price'=>$pri];
+		    db('theme_info')->where('id='.$theme_id)->update($da);
 
 		} else {
 			return json(['info' => '主题或项目名不能为空!']);
@@ -82,8 +107,6 @@ class Signup extends \think\Controller {
 				db('theme_img')->insert(['theme_id' => $theme_id, 'img_path' => $path]);
 			}
 		}
-		Session::set('userid',$user_id);
-		Session::set('themeid',$theme_id);
 		return json(['theme_id' => $theme_id]);
 		// $result['theme_result']=db('theme_info')->where('id='.$theme_id)-field('id,theme_name,desc_info')->find();
 		// $result['item_result']=db('item_info')-field('item_name,price')->where('theme_id='.$theme_id)->select();
@@ -100,6 +123,16 @@ class Signup extends \think\Controller {
 	 */
 	public function findDragonItem() {
 		$theme_id =input('theme_id');
+        //判断是否有user_id
+		if(input('user_id')){
+			$user_id=input('user_id');
+			$re=db('actor')->where("user_id=$user_id and theme_id=$theme_id")->find();
+			//判断是否已经存在数据，有就跳过没就添加
+			if(!$re){
+				$da=['theme_id'=>$theme_id,'user_id'=>$user_id];
+				db('actor')->insert($da);
+			}
+		}
 		// // 查询条件
 		// $join = [['jl_item_info jii', 'jii.user_id = jui.id']];
 		// // 查询一条数据
@@ -119,6 +152,7 @@ class Signup extends \think\Controller {
 		} else {
 			return json(['result' => '未查询到数据...']);
 		}
+
 	}
 	//添加评论
 	public function add_comment(){
