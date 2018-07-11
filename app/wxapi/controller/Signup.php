@@ -48,7 +48,11 @@ class Signup extends \think\Controller {
         //接收一个设置信息的数组
 		$actor_info=input('actor_info')?input('actor_info'):null;
 		$start_time=input('start_time')?input('start_time'):null;
+		$start_time=json_decode($start_time,true);
+		$start_time=$start_time['dadate'].$start_time['datime'];
 		$end_time=input('end_time')?input('end_time'):null;
+		$end_time=json_decode($end_time,true);
+		$end_time=$end_time['houdate'].$end_time['houtime'];
 		$address=input('address')?input('address'):null;
         //接收一个项目json数组
 		$item = input('item')?input('item'):null;
@@ -57,13 +61,13 @@ class Signup extends \think\Controller {
 		// 保存表单信息
 		if ($user_id && $theme) {
 			//主题数据
-			$theme_data= ['user_id' => $user_id, 'user_img'=>$user_img, 'user_name'=>$user_name,'svc_phone' => $phone, 'theme_name' => $theme, 'desc_info' => $desc_info, 'add_time' => time(),'address'=>$address,'actor_info'=>$actor_info,'start_time'=>$start_time,'end_time'=>$end_time];
+			$theme_data= ['user_id' => $user_id, 'user_img'=>$user_img, 'user_name'=>$user_name,'svc_phone' => $phone, 'theme_name' => $theme, 'desc_info' => $desc_info, 'add_time' => time(),'address'=>$address,'actor_info'=>$actor_info,'start_time'=>time($start_time),'end_time'=>time($end_time)];
 			// 保存主题信息
 			db('theme_info')->insert($theme_data);
 			$theme_id = db('theme_info')->getLastInsID();
 
            //项目数据
-           if ($theme_id && $item) {
+           if ($theme_id && !empty($item)) {
            	    $item = json_decode($item,true);
 		        foreach($item as $key=>$value){
 		           $item_data = ['theme_id' => $theme_id,'item_name' => $value['item_name'], 'price'=> $value['price'], 'amount' => $value['amount'], 'add_time' => time()];
@@ -131,6 +135,10 @@ class Signup extends \think\Controller {
 			if(!$re){
 				$da=['theme_id'=>$theme_id,'user_id'=>$user_id];
 				db('actor')->insert($da);
+				$act_id=db('actor')->getLastInsID();
+				$result['act']=db('actor')->where('id='.$act_id)->find();
+			}else{
+			    $result['act']=$re;
 			}
 		}
 		// // 查询条件
@@ -140,7 +148,7 @@ class Signup extends \think\Controller {
 		// $item['add_time'] = date('Y-m-d', $item['add_time']);
 		// $itemImg = Db::table('jl_item_img')->alias('jimg')->field('jimg.img_path')->where('jimg.item_id', $item_id)->select();
 		// $item[] = $itemImg;
-		$result['theme_result']=db('theme_info')->where('id='.$theme_id)->field('id,theme_name,desc_info,address')->find();
+		$result['theme_result']=db('theme_info')->where('id='.$theme_id)->field('id,theme_name,desc_info,address,svc_phone')->find();
 		$result['item_result']=db('item_info')->field('item_name,price')->where('theme_id='.$theme_id)->select();
 		    if(!$result['item_result']){$result['item_result']="";}
 		$result['theme_img']=db('theme_img')->field('img_path')->where('theme_id='.$theme_id)->select();
